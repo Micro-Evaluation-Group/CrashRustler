@@ -1,0 +1,23 @@
+[package]
+name = "crashrustler"
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+
+[workspace]
+exclude = ["test-fixtures/asan", "test-fixtures/tsan"]
+
+[dependencies]
+chrono = "0.4.44"
+capstone = "0.14"
+sha2 = "0.10"
+cpp_demangle = "0.5"
+rustc-demangle = "0.1"
+
+[[bin]]
+name = "exc_handler"
+path = "src/bin/exc_handler/main.rs"
+
+[[bin]]
+name = "crash_dummy"
+path = "src/bin/crash_dummy.rs"
