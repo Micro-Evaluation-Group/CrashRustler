@@ -1,6 +1,6 @@
 # CrashRustler
 
-[![CI](https://github.com/noperand/crashrustler/actions/workflows/ci.yml/badge.svg)](https://github.com/noperand/crashrustler/actions/workflows/ci.yml)
+[![CI](https://github.com/Micro-Evaluation-Group/CrashRustler/actions/workflows/ci.yml/badge.svg)](https://github.com/Micro-Evaluation-Group/CrashRustler/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange.svg)](https://www.rust-lang.org/)
 [![macOS](https://img.shields.io/badge/platform-macOS-lightgrey.svg)]()
