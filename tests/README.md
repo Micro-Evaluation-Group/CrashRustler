@@ -3,7 +3,7 @@
 ## Commands
 
 ```bash
-cargo test                              # 315 lib + 33 bin + 14 doc + 64 integration (426 total)
+cargo test                              # 315 lib + 33 bin + 14 doc + 68 integration (430 total)
 cargo test unwind                       # Unwind module tests only (61 tests)
 cargo test --test exc_handler           # Fork+exec integration tests (11 tests)
 cargo test --test attach_exc_handler    # Attach-mode integration tests (8 tests, requires entitlement)
@@ -94,6 +94,17 @@ The binary is built via `make` on demand. Tests skip if clang is unavailable or 
 
 These tests exercise the `__DATA,__crash_info` Mach-O section extraction path — clang's sanitizer runtime uses the modern `crashreporter_annotations_t` struct rather than the `___crashreporter_info__` nlist symbol used by Rust's runtime.
 
+## C ASan multi-module integration tests (c_asan_multilib_exc_handler.rs)
+
+4 tests that build a crash dummy linking two ASan-instrumented dynamic libraries (`lib_safe.dylib` and `lib_buggy.dylib`) and run it under `exc_handler` to verify that sanitizer crash report extraction works correctly when multiple ASan-instrumented modules are loaded simultaneously.
+
+The crash dummy calls `safe_heap_operation()` (no violation) first, then `buggy_heap_overflow()` (heap-buffer-overflow). Tests verify that:
+- The crash log contains the correct ASan error report (`heap-buffer-overflow`)
+- The report identifies the buggy module (`buggy_heap_overflow` in `lib_buggy.c`)
+- The report does NOT blame the safe module (`safe_heap_operation`)
+
+This validates that `extract_crash_reporter_info()` correctly finds the populated instance of `___crashreporter_info__` or `__DATA,__crash_info` — both of which reside in the single ASan runtime dylib, not in individual user modules.
+
 ## C TSan integration tests (c_tsan_exc_handler.rs)
 
 4 tests that build a C `c-tsan-crash-dummy` binary with `clang -fsanitize=thread` and run it under `exc_handler` to verify handling of TSan-detected data races from C binaries (data race on global, data race on heap).
@@ -139,6 +150,7 @@ The Rust and C (clang) sanitizer test suites together provide full coverage of e
 | Rust nightly (`-Zsanitizer=*`) | 12 (8 ASan + 4 TSan) | `___crashreporter_info__` nlist symbol |
 | Apple clang (`-fsanitize=*`) | 26 (8 ASan + 4 TSan + 6 UBSan + 8 IntSan) | `__DATA,__crash_info` section |
 | Homebrew LLVM clang (`-fsanitize=cfi`) | 2 (CFI) | `___crashreporter_info__` nlist symbol (via UBSan runtime) |
+| Multi-module (2 ASan dylibs) | 4 | Verifies correct module attribution with multiple ASan-instrumented libraries |
 
 GCC sanitizer tests are not included — Homebrew GCC on macOS does not ship sanitizer runtime libraries, and GCC's sanitizer instrumentation is ABI-incompatible with clang's runtimes.
 
