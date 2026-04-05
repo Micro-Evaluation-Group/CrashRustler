@@ -97,6 +97,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
 
       - name: Publish to crates.io
-        run: cargo publish --token "$CRATES_IO_TOKEN"
+        run: cargo publish --allow-dirty --token "$CRATES_IO_TOKEN"
         env:
           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
