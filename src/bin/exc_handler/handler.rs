@@ -476,7 +476,12 @@ fn sha256_of_file(path: &str) -> Option<String> {
         }
         hasher.update(&buf[..n]);
     }
-    Some(format!("{:x}", hasher.finalize()))
+    let hash = hasher.finalize();
+    Some(hash.iter().fold(String::with_capacity(64), |mut s, b| {
+        use std::fmt::Write;
+        let _ = write!(s, "{b:02x}");
+        s
+    }))
 }
 
 /// Builds the crash log text.
