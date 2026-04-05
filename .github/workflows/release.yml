@@ -1,4 +1,6 @@
 name: Release
+run-name: >-
+  ${{ inputs.tag && format('Publish {0} to crates.io', inputs.tag) || format('Release {0}', github.ref_name) }}
 
 on:
   push:
