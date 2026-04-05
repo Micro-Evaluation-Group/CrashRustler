@@ -10,7 +10,7 @@ exclude = ["test-fixtures/asan", "test-fixtures/tsan"]
 [dependencies]
 chrono = "0.4.44"
 capstone = "0.14"
-sha2 = "0.10"
+sha2 = "0.11"
 cpp_demangle = "0.5"
 rustc-demangle = "0.1"
 
