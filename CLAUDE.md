@@ -124,6 +124,12 @@ test-fixtures/c-cfi/    — C CFI crash dummy (compiled with Homebrew LLVM clang
   crash_dummy.c       — One crash mode: cfi_icall (indirect call type mismatch)
   Makefile            — Builds with Homebrew LLVM clang -fsanitize=cfi -fno-sanitize-trap=cfi -flto -fvisibility=hidden
 
+test-fixtures/c-asan-multilib/ — Multi-module ASan crash dummy (two dylibs + main binary)
+  lib_safe.c          — ASan-instrumented library with valid heap operations (no violation)
+  lib_buggy.c         — ASan-instrumented library that triggers heap-buffer-overflow
+  main.c              — Links both libraries, calls safe then buggy to verify correct report extraction
+  Makefile            — Builds lib_safe.dylib, lib_buggy.dylib, and the main binary with -fsanitize=address
+
 tests/
   exc_handler.rs        — Integration tests: launch exc_handler against crash_dummy, verify exit codes and crash logs
   asan_exc_handler.rs   — Rust ASan integration tests: build asan-crash-dummy, run under exc_handler, verify crash handling
@@ -143,7 +149,7 @@ tests/
 - **Compact unwind format**: The `__unwind_info` parser implements the full Apple format (28-byte header, first-level index with sentinel exclusion, regular and compressed second-level pages). `decode_encoding()` dispatches to ARM64 or x86_64 decoders based on `CpuType`.
 - **Section resolution is lazy**: `BinaryImageInfo` sections (`__unwind_info`, `__eh_frame`) are resolved on first access via `resolve_sections()` to avoid parsing Mach-O headers for images that are never hit during unwinding.
 - **Symbol resolution**: Backtrace frames are resolved to function names via Mach-O nlist symbol table parsing from target process memory. Supports Rust and C++ demangling.
-- **Crash reporter info extraction**: After enumerating binary images, `handler.rs` extracts crash reporter messages using two mechanisms: (1) scanning nlist symbol tables for the `___crashreporter_info__` symbol (a `const char*` used by Rust sanitizer runtimes), and (2) reading the `crashreporter_annotations_t` struct from `__DATA,__crash_info` Mach-O sections (the modern mechanism used by clang sanitizer runtimes). When found, the pointer is dereferenced and up to 64 KB is read from target process memory. The content appears in the crash log under "Application Specific Information:".
+- **Crash reporter info extraction**: After enumerating binary images, `handler.rs` extracts crash reporter messages using two mechanisms: (1) scanning nlist symbol tables for the `___crashreporter_info__` symbol (a `const char*` used by Rust sanitizer runtimes), and (2) reading the `crashreporter_annotations_t` struct from `__DATA,__crash_info` Mach-O sections (the modern mechanism used by clang sanitizer runtimes). When found, the pointer is dereferenced and up to 64 KB is read from target process memory. The content appears in the crash log under "Application Specific Information:". Both symbols/sections reside in the single sanitizer runtime dylib (`libclang_rt.asan_osx_dynamic.dylib`), not in individual user modules — the iterative lookup over loaded images correctly finds the one populated instance regardless of how many sanitizer-instrumented modules are loaded. Verified with multi-module integration tests (`c-asan-multilib`).
 - **Sanitizer crash dummies (Rust)**: The `test-fixtures/asan/` and `test-fixtures/tsan/` crates are intentionally excluded from the workspace (`[workspace] exclude` in root `Cargo.toml`) because they must be compiled with sanitizer-specific `RUSTFLAGS` which cannot be applied per-target within a single workspace. The integration tests build them on demand.
 - **Sanitizer crash dummies (C, Apple clang)**: The `test-fixtures/c-asan/`, `test-fixtures/c-tsan/`, `test-fixtures/c-ubsan/`, and `test-fixtures/c-intsan/` directories contain C crash dummies compiled with Apple clang using `-fsanitize=address`, `-fsanitize=thread`, `-fsanitize=undefined`, and `-fsanitize=integer` respectively. These exercise the `__crash_info` section extraction path. UBSan and integer sanitizer require `-fno-sanitize-recover` to abort on error. The integer sanitizer covers checks unique to `-fsanitize=integer` that are not in `-fsanitize=undefined`: unsigned overflow, unsigned shift base, and implicit integer truncation.
 - **Sanitizer crash dummies (C, Homebrew LLVM clang)**: The `test-fixtures/c-cfi/` directory contains a C crash dummy compiled with Homebrew LLVM clang (Apple clang does not support CFI). CFI requires `-flto -fvisibility=hidden` and uses diagnostic mode (`-fno-sanitize-trap=cfi`) which links the UBSan runtime and populates `___crashreporter_info__` before aborting. This exercises the nlist symbol extraction path from a C binary — the same mechanism used by Rust sanitizer runtimes.
@@ -199,7 +205,7 @@ Integration tests that require debugger entitlements skip gracefully on CI runne
 
 ### Test Structure
 
-315 library unit tests across 30 submodules + 33 exc_handler binary unit tests + 14 doctests + 11 fork+exec integration tests + 8 attach-mode integration tests + 5 launchd service mode integration tests + 8 Rust ASan integration tests + 4 Rust TSan integration tests + 8 C ASan integration tests + 4 C TSan integration tests + 6 C UBSan integration tests + 8 C integer sanitizer integration tests + 2 C CFI integration tests (426 total). Tests are co-located with their source modules:
+315 library unit tests across 30 submodules + 33 exc_handler binary unit tests + 14 doctests + 11 fork+exec integration tests + 8 attach-mode integration tests + 5 launchd service mode integration tests + 8 Rust ASan integration tests + 4 Rust TSan integration tests + 8 C ASan integration tests + 4 C ASan multi-module integration tests + 4 C TSan integration tests + 6 C UBSan integration tests + 8 C integer sanitizer integration tests + 2 C CFI integration tests (430 total). Tests are co-located with their source modules:
 
 - **types.rs:** `types` (10 tests)
 - **init.rs:** `tests` (7 tests)
@@ -226,6 +232,7 @@ Integration tests that require debugger entitlements skip gracefully on CI runne
 - **tests/asan_exc_handler.rs:** 8 Rust ASan integration tests (exit codes and crash log content for heap_overflow, heap_uaf, stack_overflow, stack_uaf)
 - **tests/tsan_exc_handler.rs:** 4 Rust TSan integration tests (exit codes and crash log content for data_race, heap_race)
 - **tests/c_asan_exc_handler.rs:** 8 C ASan integration tests (exit codes and crash log content via __crash_info extraction)
+- **tests/c_asan_multilib_exc_handler.rs:** 4 C ASan multi-module integration tests (verifies correct crash report extraction when multiple ASan-instrumented dylibs are loaded)
 - **tests/c_tsan_exc_handler.rs:** 4 C TSan integration tests (exit codes and crash log content via __crash_info extraction)
 - **tests/c_ubsan_exc_handler.rs:** 6 C UBSan integration tests (exit codes and crash log content via __crash_info extraction)
 - **tests/c_intsan_exc_handler.rs:** 8 C integer sanitizer integration tests (exit codes and crash log content via __crash_info extraction)

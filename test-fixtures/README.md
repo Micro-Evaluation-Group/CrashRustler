@@ -156,6 +156,28 @@ Run under `exc_handler`:
 echo $?  # 6 (SIGABRT, not exploitable)
 ```
 
+## C: c-asan-multilib (multi-module ASan)
+
+Multiple ASan-instrumented C dynamic libraries linked into a single binary. Used to verify that `extract_crash_reporter_info()` correctly extracts the sanitizer error report from the ASan runtime when multiple instrumented modules are loaded but only one triggers a violation.
+
+- `lib_safe.dylib` — performs valid heap operations (no violation)
+- `lib_buggy.dylib` — triggers `heap-buffer-overflow`
+- `main.c` — calls safe first, then buggy
+
+```bash
+cd test-fixtures/c-asan-multilib
+make
+```
+
+Run under `exc_handler`:
+
+```bash
+./target/release/exc_handler ./test-fixtures/c-asan-multilib/c-asan-multilib-crash-dummy
+echo $?  # 6 (SIGABRT, not exploitable)
+```
+
+Both `___crashreporter_info__` and `__DATA,__crash_info` reside in the single ASan runtime dylib (`libclang_rt.asan_osx_dynamic.dylib`), not in individual user modules. The iterative lookup in `extract_crash_reporter_info()` correctly finds the one populated instance regardless of how many instrumented modules are loaded.
+
 ## Example crash log excerpt (sanitizer report)
 
 ```

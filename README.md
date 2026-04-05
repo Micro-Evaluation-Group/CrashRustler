@@ -164,7 +164,7 @@ See [exc_handler README](src/bin/exc_handler/README.md), [test fixtures README](
 ## Testing
 
 ```bash
-cargo test                              # 315 lib + 33 bin + 14 doc + 64 integration (426 total)
+cargo test                              # 315 lib + 33 bin + 14 doc + 68 integration (430 total)
 cargo test --test exc_handler           # Fork+exec integration tests (11 tests)
 cargo test --test attach_exc_handler    # Attach-mode integration tests (8 tests, requires entitlement)
 cargo test --test launchd_exc_handler   # Launchd service mode tests (5 tests, requires entitlement)
