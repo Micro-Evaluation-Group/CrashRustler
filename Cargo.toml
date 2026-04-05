@@ -3,6 +3,12 @@ name = "crashrustler"
 version = "1.0.0"
 edition = "2024"
 license = "MIT"
+description = "Rust reimplementation of CrashWrangler — macOS crash report analysis with exploitability classification"
+repository = "https://github.com/Micro-Evaluation-Group/CrashRustler"
+documentation = "https://micro-evaluation-group.github.io/CrashRustler/crashrustler/"
+readme = "README.md"
+keywords = ["crash", "macos", "exploitability", "mach", "debugging"]
+categories = ["os::macos-apis", "development-tools::debugging"]
 
 [workspace]
 exclude = ["test-fixtures/asan", "test-fixtures/tsan"]
