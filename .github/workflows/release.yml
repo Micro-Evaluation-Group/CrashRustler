@@ -21,6 +21,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: dtolnay/rust-toolchain@nightly
         with:
@@ -31,10 +33,6 @@ jobs:
       - name: Resolve tag
         id: tag
         run: echo "name=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout tag
-        if: inputs.tag
-        run: git checkout "refs/tags/${{ inputs.tag }}"
 
       - name: Extract version from tag
         id: version
